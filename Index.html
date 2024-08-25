@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do List App</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- CSS Styles -->
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      color: #333;
+    }
+
+    .new-task {
+      display: flex;
+      margin-bottom: 20px;
+    }
+
+    .new-task input {
+      flex: 1;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px 0 0 4px;
+      font-size: 1rem;
+    }
+
+    .new-task button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #28a745;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 0 4px 4px 0;
+      transition: background-color 0.3s ease;
+    }
+
+    .new-task button:hover {
+      background-color: #218838;
+    }
+
+    .filters {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .filters button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background-color: #e9ecef;
+      color: #495057;
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin: 0 5px;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+    }
+
+    .filters button.active {
+      background-color: #007bff;
+      color: #fff;
+    }
+
+    .task-list {
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: #f8f9fa;
+      padding: 10px 15px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .task-item.completed .task-name {
+      text-decoration: line-through;
+      color: #6c757d;
+    }
+
+    .task-info {
+      display: flex;
+      align-items: center;
+      flex: 1;
+    }
+
+    .task-info input[type="checkbox"] {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .task-name {
+      font-size: 1rem;
+      word-break: break-word;
+    }
+
+    .task-actions button {
+      border: none;
+      background: none;
+      cursor: pointer;
+      margin-left: 10px;
+      font-size: 1.1rem;
+      color: #6c757d;
+      transition: color 0.3s ease;
+    }
+
+    .task-actions button:hover {
+      color: #343a40;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 500px) {
+      .container {
+        padding: 20px;
+      }
+
+      .new-task input {
+        font-size: 0.9rem;
+      }
+
+      .new-task button {
+        font-size: 0.9rem;
+      }
+
+      .task-name {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>To-Do List</h1>
+    </div>
+
+    <div class="new-task">
+      <input type="text" id="task-input" placeholder="Add a new task..." />
+      <button id="add-task-btn">Add Task</button>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="pending">Pending</button>
+      <button class="filter-btn" data-filter="completed">Completed</button>
+    </div>
+
+    <ul class="task-list" id="task-list">
+      <!-- Tasks will be appended here dynamically -->
+    </ul>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    // Selecting DOM elements
+    const taskInput = document.getElementById('task-input');
+    const addTaskBtn = document.getElementById('add-task-btn');
+    const taskList = document.getElementById('task-list');
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    // Task array to store all tasks
+    let tasks = [];
+
+    // Event listeners
+    addTaskBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keypress', event => {
+      if (event.key === 'Enter') addTask();
+    });
+    filterButtons.forEach(button => button.addEventListener('click', filterTasks));
+
+    // Function to add a new task
+    function addTask() {
+      const taskText = taskInput.value.trim();
+      if (taskText === '') return alert('Please enter a task.');
+
+      const newTask = {
+        id: Date.now(),
+        name: taskText,
+        completed: false
+      };
+
+      tasks.push(newTask);
+      renderTasks();
+      taskInput.value = '';
+    }
+
+    // Function to render tasks to the DOM
+    function renderTasks(filter = 'all') {
+      taskList.innerHTML = '';
+
+      const filteredTasks = tasks.filter(task => {
+        if (filter === 'all') return true;
+        if (filter === 'completed') return task.completed;
+        if (filter === 'pending') return !task.completed;
+      });
+
+      filteredTasks.forEach(task => {
+        const taskItem = document.createElement('li');
+        taskItem.classList.add('task-item');
+        if (task.completed) taskItem.classList.add('completed');
+
+        taskItem.innerHTML = `
+          <div class="task-info">
+            <input type="checkbox" ${task.completed ? 'checked' : ''} data-id="${task.id}" />
+            <span class="task-name">${task.name}</span>
+          </div>
+          <div class="task-actions">
+            <button class="edit-btn" data-id="${task.id}">&#9998;</button>
+            <button class="delete-btn" data-id="${task.id}">&#10005;</button>
+          </div>
+        `;
+
+        taskList.appendChild(taskItem);
+      });
+
+      attachTaskEvents();
+    }
+
+    // Function to attach events to task action buttons
+    function attachTaskEvents() {
+      const checkboxes = document.querySelectorAll('.task-info input[type="checkbox"]');
+      const editButtons = document.querySelectorAll('.edit-btn');
+      const deleteButtons = document.querySelectorAll('.delete-btn');
+
+      checkboxes.forEach(checkbox => checkbox.addEventListener('change', toggleTaskCompletion));
+      editButtons.forEach(button => button.addEventListener('click', editTask));
+      deleteButtons.forEach(button => button.addEventListener('click', deleteTask));
+    }
+
+    // Function to toggle task completion status
+    function toggleTaskCompletion(event) {
+      const taskId = Number(event.target.dataset.id);
+      tasks = tasks.map(task => task.id === taskId ? { ...task, completed: event.target.checked } : task);
+      renderTasks(getActiveFilter());
+    }
+
+    // Function to edit a task
+    function editTask(event) {
+      const taskId = Number(event.target.dataset.id);
+      const task = tasks.find(task => task.id === taskId);
+      const newTaskName = prompt('Edit your task:', task.name);
+
+      if (newTaskName !== null && newTaskName.trim() !== '') {
+        task.name = newTaskName.trim();
+        renderTasks(getActiveFilter());
+      }
+    }
+
+    // Function to delete a task
+    function deleteTask(event) {
+      const taskId = Number(event.target.dataset.id);
+      tasks = tasks.filter(task => task.id !== taskId);
+      renderTasks(getActiveFilter());
+    }
+
+    // Function to filter tasks
+    function filterTasks(event) {
+      filterButtons.forEach(button => button.classList.remove('active'));
+      event.target.classList.add('active');
+      renderTasks(event.target.dataset.filter);
+    }
+
+    // Helper function to get the currently active filter
+    function getActiveFilter() {
+      const activeButton = document.querySelector('.filter-btn.active');
+      return activeButton.dataset.filter;
+    }
+
+    // Initial render
+    renderTasks();
+  </script>
+</body>
+</html>
